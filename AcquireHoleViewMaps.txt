@@ -1,0 +1,58 @@
+MacroName AcquireHoleViewMaps
+# Based on a script by Chen Xu
+# NOTE: make sure the hole template is in buffer position 'P'
+# This script should be run with LD enabled
+# Created by Kyle Dent, v0.1, 2019-07-28 12:00
+
+#******SETTINGS*******
+maxHoleShift = 750 # units nm - up to 40% hole diameter?
+holeDiameter = 2.0 # units um
+viewDefocus = -75
+numAttempts = 2
+initialExpTime = 0.6
+finalExpTime = 0.6
+#******END OF SETTINGS*******
+
+ReportLowDose
+If $RepVal1 == 0
+   SetLowDoseMode 1
+Endif
+
+GotoLowDoseArea V
+SetDefocus $viewDefocus
+
+echo **** Acquiring hole-view image and centering
+
+holeRadius = ( $holeDiameter * 1000 ) / 2
+
+Loop $numAttempts attemptNo
+  echo Starting hole alignment attempt: $attemptNo
+  if $attemptNo == $numAttempts
+     echo DEBUG: Setting exposure time for final acquisition..
+	SetExposure V $finalExpTime
+  else
+     echo DEBUG: Setting exposure for initial acquisition...	
+        SetExposure V $initialExpTime
+  endif
+  CallFunction CenterHole
+  
+  if  $holeShift > $maxHoleShift
+     echo DEBUG: Displacement ($holeShift) is greater than allowed $maxHoleShift on attempt $attemptNo
+     ResetImageShift
+  elseif $holeShift <= $maxHoleShift
+    echo DEBUG: Displacement $holeShift is acceptable (less than $maxHoleShift), saving map.
+    echo Hole is centered, saving image and creating hole anchor-map.
+     Save A
+     NewMap
+     Exit
+  endif
+EndLoop
+Exit
+
+Function CenterHole
+  V
+  AlignTo P #1  - disables image-shift. Image shift appears to be beneficial here.
+  ReportAlignShift
+  holeShift = sqrt ( ( $RepVal5 * $RepVal5 ) + ( $RepVal6 * $RepVal6 ) )
+  echo The displacement of the hole from the template is: $holeShift
+EndFunction

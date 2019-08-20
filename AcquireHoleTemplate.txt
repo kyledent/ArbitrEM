@@ -1,0 +1,23 @@
+ScriptName AcquireHoleTemplate
+# First, setup imaging conditions for the LD View preset
+# Run script over a representative specimen hole (not an empty hole).
+# Center hole by holding the Right mouse button and shifting the cross-hair.
+# Under Camera Controls --| Setup, crop the View to eliminate neighbouring holes.
+# Rerun the script to acquire the centered image, repeat if necessary. 
+# Perfect centering of the template hole is not necessary. 
+# Created by Kyle Dent, v0.1, 2019-07-28 12:00
+
+viewDefocus = -75
+initialExpTime = 0.6
+ReportLowDose
+
+If $RepVal1 == 0
+   SetLowDoseMode 1
+Endif
+
+ResetImageShift 
+GoToLowDoseArea V
+SetExposure V $initialExpTime
+SetDefocus $viewDefocus
+V
+Copy A P

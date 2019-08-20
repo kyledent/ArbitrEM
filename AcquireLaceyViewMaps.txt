@@ -1,0 +1,25 @@
+ScriptName AcquireLaceyViewMaps
+
+# This script is typically used for lacey specimen grids.Will acquires a series of maps to be used for feature selection
+# Workflow: acquire square montage (3x3/4x4), add grid of points after drawing a polygon. Check collapse groups.
+# Workflow: Check 'New File at group', specify single images, create filename e.g. laceyViews_001.mrc
+# Workflow: Navigator, 'Acquire at Points', specify this script
+# Created by Kyle Dent, v0.1, 2019-07-28 12:00
+
+#******SETTINGS*******
+initialExpTime = 0.4
+countingEfficiency = 400
+calculateDose = 1
+#******END OF SETTINGS*******
+
+GotoLowDoseArea V
+SetDefocus -75
+SetExposure V $initialExpTime
+
+V
+Save A
+NewMap
+If calculateDose = 1
+    CallFunction CalculateDose
+Endif
+

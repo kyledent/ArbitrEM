@@ -1,0 +1,225 @@
+ScriptName AbritrEM
+# PLEASE NOTE: ArbitrEM is currently under development and is currently in 'alpha'.
+# This script is typically called from the Navigator menu (Acquire at Points).
+# Navigator items corresponding to View-maps are set to acquire (A) 
+# Please map sure that square montages have been deleted from the Navigator
+# as well as any Navigator point groups for View-map acquisition
+# Please make sure you have updated the navigator indices guide using the processNavigator.py script.
+# A general script for single-particle data collection in SerialEM with allowing a custom series of beam-image shifts to be 
+# implemented. Borrows functions from various scripts on the Nexperion website (https://www.nexperion.net/).
+# Created by Kyle Dent, v0.15, 2019-07-30 10:11 - please write to kcd26@cam.ac.uk for assistance.
+
+#******SETTINGS*******
+# General settings
+foilHoleDiameter = 3.5			# units um
+viewDefocus = -75				# unit um
+viewExposureTime = 0.2			# seconds
+imageShiftSettlingTime = 3 		# seconds
+stageShiftSettlingTime = 5 		# seconds
+focusDistance = 1.7 			# units um
+maxHoleStageShift = 100		    # units nm - rename to maxViewMapStageOffset?
+
+#SerialEM settings
+SuppressReports
+ErrorsToLog 0
+Verbose 0
+ReportClock
+#ReportEnergyFilter
+#K2HardwareDarkRefUpdate = 4
+
+# GIF settings
+#ZeroLossInterval = 60			# minutes
+
+#******READ SETTINGS FILES*******
+# Specify location of information files produce by processNavigator.py
+ReadTextFile pointIndices D:\NT21004-256\lacey-day1\arbitrEM\pointIndices.txt 
+ReadTextFile indexGuide D:\NT21004-256\lacey-day1\arbitrEM\indexGuide.txt 
+ReadTextFile shifts D:\NT21004-256\lacey-day1\arbitrEM\settings\customShifts.txt
+ReadTextFile defocus_range D:\NT21004-256\lacey-day1\arbitrEM\settings\defocusRange.txt
+ReadTextFile early_return D:\NT21004-256\lacey-day1\arbitrEM\settings\earlyReturn.txt
+#******END OF SETTINGS******
+
+#*****PROCESS_SETTINGS********
+echo ArbitrEM starting...
+
+echo A total of $#pointIndices high-magnification acquisitions (point indices) identified.
+echo There are $#indexGuide items in the index guide, which help ArbitrEM negotiate the current Navigator - please check that these values are reasonable.
+customOffsetX = $shifts[1] # e.g. 0.075 - units um
+customOffsetY = $shifts[2] # e.g. 0.050 - units um
+echo From the shifts.txt settings file, offsets in X and Y: $customOffsetX $customOffsetY will be applied to the next round of acquisitions.
+
+targetDefocusMin = $defocus_range[1] #e.g. -0.5 (units um)
+targetDefocusMax = $defocus_range[2] #e.g. -1.3	(units um)
+targetDefocusStep = $defocus_range[3] # e.g. 0.1 - this value should be positive
+
+#EarlyReturnNextShot $early_return[1] # for Gatan K2/K3 detectors
+
+echo From the defocus_range.txt file the following defocus range will be applied: $defocus_range[1] , $defocus_range[2], step: $defocus_range[3] um
+echo From the early_return.txt settings file, early return is set to $early_return[1]
+
+refineZeroLossPeriodicity = 1 * 60 # every x hours * 60 minutes / hour
+#Frequency for hardware dark update, in hours
+
+foilHoleRadius = $foilHoleDiameter / 2
+
+# refinedHoleOffset parameters are set during hole center refinement (do not alter!)
+refinedHoleOffsetX = 0
+refinedHoleOffsetY = 0
+
+# acquireHole set to 1 once hole is centered and points have been identified.
+acquiringHole = 0
+acqNavIndices = 0
+
+# Report on the currently selected NavItem
+ReportNavItem
+#echo DEBUG: $RepVal1 $RepVal2 $RepVal3 $RepVal4 $navLabel $navNote 
+
+# 'ReportedValue5' (0 for point, 1 for polygon, 2 for map)
+# if NavigatorItem_type = 2, i.e. if it is a map.
+If $RepVal5 == 2
+    holeNavIndex = $RepVal1
+    holeStageX = $RepVal2
+    holeStageY = $RepVal3
+    holeStageZ = $RepVal4
+    #echo DEBUG: Hole: $RepVal1 stage X: $holeStageX , Hole stage Y: $holeStageY
+    
+    CallFunction CenterOnHole
+    acqNavIndices = 0
+    #echo DEBUG: Identifying acquisition points
+    CallFunction IdentifyAcquisitionPoints
+    echo $#acqNavIndices high-magnification ponts identified for the current region labelled $holeNavIndex.
+    #echo DEBUG: Acquiring at Navigator points $acqNavIndices
+
+    #********MAIN LOOP FOR IMAGE ACQUISITION FOR A SINGLE HOLE/LACEY AREA	
+    If $#acqNavIndices > 0
+        CallFunction AutoFill
+        CallFunction FocusForAcquisition
+        CallFunction AcquireImages
+        CallFunction AutoFill
+        #CallFunction RefineZeroLoss # make sure to ensure Preview has sufficient counts
+        #CallFunction UpdateDarkRef
+    Endif
+    SetImageShift 0 0 1
+EndIf
+
+Function FocusForAcquisition
+   echo Focusing...
+    CallFunction CycleDefocus
+    Delay $StageShiftSettlingTime sec
+    GoToLowDoseArea F
+    Autofocus
+EndFunction
+
+Function IdentifyAcquisitionPoints
+   # we have two files, a list of acquisition points, and a list of indices which act as a view-map guide for the navigator
+   echo DEBUG: The current hole nav index : $holeNavIndex
+   previousHoleNavIndex = $holeNavIndex - 1
+   #echo DEBUG The value in the index guide for this position is $indexGuide[$holeNavIndex]
+   numPointsForCurrentHole = $indexGuide[$holeNavIndex] - $indexGuide[$previousHoleNavIndex]
+   #echo DEBUG: The number of points identified for the current hole: $numPointsForCurrentHole
+   start_index = $indexGuide[$previousHoleNavIndex]
+   #echo DEBUG: $start_index
+   Loop $numPointsForCurrentHole pri_index
+       trueIndex = ( $start_index + $pri_index )
+       #echo DEBUG: The actual index identified is: $trueIndex
+       acqPointIndex = $pointIndices[$trueIndex]
+       acqNavIndices = {$acqNavIndices $acqPointIndex}
+   EndLoop    
+EndFunction
+
+Function CenterOnHole
+   echo Tracking View-map...
+    GoToLowDoseArea V
+    SetDefocus $viewDefocus
+    SetExposure V $viewExposureTime
+    echo Aligning to View map 
+    RealignToNavItem 0 0 1 1 1
+    ReportAlignShift
+    initialHoleOffSetX = $RepVal5 / 1000
+    initialHoleOffSetY = $RepVal6 / 1000
+    Echo DEBUG: The displacement of the hole aligment in X and Y is: $initialHoleOffSetX $initialHoleOffSetY microns on the first attempt
+    measuredHoleShift = SQRT ( ( $RepVal5 * $RepVal5 ) + ( $RepVal6 * $RepVal6 ) )
+    If $measuredHoleShift > $maxHoleStageShift
+        RealignToNavItem 0 0 1 1 1
+        ReportAlignShift       
+        refinedViewMapOffSetX = $RepVal5 / 1000 # convert units of displacement to micrometers
+        refinedViewMapOffSetY = $RepVal6 / 1000
+        Echo The final displament of the hole in X and Y: $refinedHoleOffSetX $refinedHoleOffSetY (microns)
+     Else
+        refinedViewMapOffSetX = $RepVal5 / 1000
+        refinedViewMapOffSetY = $RepVal6 / 1000
+        Echo The final displament of the hole in X and Y: $refinedHoleOffSetX $refinedHoleOffSetY (microns)
+     EndIf
+EndFunction
+
+Function AcquireImages
+    actualNumAcqs = $#acqNavIndices - 1
+    echo Going for $actualNumAcqs high-magnification acquisitions... 
+	# must handle that the first item will always be 0?
+	Loop $#acqNavIndices currentAcqIndex
+		currentNavIndex = $acqNavIndices[$currentAcqIndex]
+		If $currentNavIndex != 0
+			#echo DEBUG: Looking up Navigator item/index $currentNavIndex for acquisition $currentAcqIndex
+			ReportOtherItem $currentNavIndex
+			If $RepVal5 == 0 AND $RepVal1 != 1
+				acqPointLabel = $RepVal1
+				acqPointStageX = $RepVal2
+				acqPointStageY = $RepVal3
+				acqPointStageZ = $RepVal4
+
+				CallFunction CalculateImageShift
+				
+				SetImageShift 0 0 1
+				ImageShiftByMicrons $imageShiftX $imageShiftY [1]
+				GoToLowDoseArea R
+
+				Delay $imageShiftSettlingTime sec
+                actualAcqIndex = $currentAcqIndex - 1
+				echo DEBUG: Recording $actualAcqIndex from Nav item $currentNavIndex. The calculated beam-image shift is $imageShiftX $imageShiftY microns in X, and Y respectively for Navigator item label/index $navLabel
+                Record
+			Endif
+		Endif
+	EndLoop
+EndFunction
+
+Function CalculateImageShift
+    # calculate imageshift displacement X and Y, X is along tilt axis.
+    imageShiftX =  -1 * ( $acqPointStageX  - $refinedHoleOffsetX - $customOffsetX - $holeStageX )
+    imageShiftY =  -1 * ( $acqPointStageY  -  $refinedHoleOffsetY - $customOffsetY - $holeStageY )
+EndFunction
+
+Function CycleDefocus
+   # this focusing strategy was inherited a script by David Mastronarde
+   bigStep = $targetDefocusMin - $targetDefocusMax
+   ReportTargetDefocus
+   targetDefocus = $RepVal1
+
+   If $targetDefocus > $targetDefocusMin
+      diff = $targetDefocus - $targetDefocusMin
+      IncTargetDefocus -$diff
+   ElseIf $targetDefocus > $targetDefocusMax
+      IncTargetDefocus -$targetDefocusStep
+   Else
+      IncTargetDefocus $bigStep
+   Endif
+   ReportTargetDefocus DefocusTarget
+   echo Target defocus = $targetDefocus
+EndFunction
+
+Function AutoFill
+  Loop 10
+    AreDewarsFilling
+    If $reportedvalue1 == 0
+      Echo Dewars are not filling. Resuming.
+      break
+    ElseIf $reportedvalue1 == 1
+      echo Dewars are filling...
+      delay 60 sec
+    EndIf
+  EndLoop
+EndFunction
+
+Function RefineZeroLoss
+    echo Refining ZLP
+    RefineZLP $refineZeroLossPeriodicity
+EndFunction
