@@ -6,20 +6,17 @@ ScriptName AcquireLaceyViewMaps
 # Workflow: Navigator, 'Acquire at Points', specify this script
 # Created by Kyle Dent, v0.1, 2019-07-28 12:00
 
-#******SETTINGS*******
-initialExpTime = 0.4
-countingEfficiency = 400
+#******END OF SETTINGS*******
+viewExpTime = 0.4
 calculateDose = 1
 #******END OF SETTINGS*******
 
 GotoLowDoseArea V
 SetDefocus -75
-SetExposure V $initialExpTime
+SetExposure V $viewExpTime
 
 V
 Save A
 NewMap
-If calculateDose = 1
-    CallFunction CalculateDose
-Endif
+
 
