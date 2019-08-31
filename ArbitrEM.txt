@@ -1,7 +1,8 @@
 ScriptName AbritrEM
 # PLEASE NOTE: ArbitrEM is currently under development and is currently in 'alpha'.
 # This script is typically called from the Navigator menu (Acquire at Points).
-# Navigator items corresponding to View-maps are set to acquire (A) 
+# To test, it may be run by selecting a View-map marked for Acquire in the Navigator and simply clicking the 'Run' button from the Script panel.
+# Navigator items corresponding to View-maps are set to acquire (A). 
 # Please map sure that square montages have been deleted from the Navigator
 # as well as any Navigator point groups for View-map acquisition
 # Please make sure you have updated the navigator indices guide using the processNavigator.py script.
@@ -17,7 +18,7 @@ viewExposureTime = 0.2			# seconds
 imageShiftSettlingTime = 3 		# seconds
 stageShiftSettlingTime = 5 		# seconds
 focusDistance = 1.7 			# units um
-maxHoleStageShift = 100		    # units nm - rename to maxViewMapStageOffset?
+maxHoleStageShift = 100		    # units nm
 
 #SerialEM settings
 SuppressReports

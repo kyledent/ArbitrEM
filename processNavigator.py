@@ -7,21 +7,25 @@
 # Navigator parsing code borrowed from David Mastronarde's supermont.py. 
 # TODO: determine navigator file name and prefix output files with this name for convenience?
 # TODO: plot position of acquisition points within each acquisition template.
-# TODO: output ArbitrEM script with path to settings files imbedded along with other parameters
+# TODO: output ArbitrEM script with path to settings files embedded along with other parameters
+# TODO: support XML navigator files
 
 from __future__ import division
 
 import math, re, sys, argparse, os, sys
 
-parser = argparse.ArgumentParser(description='ArbitrEM Python script to process a SerialEM navigator allowing acquisition points to be associated with specific view-maps. ArbitrEM session files are output by default into ./arbitrEM')
+parser = argparse.ArgumentParser(description='ArbitrEM Python script to process a SerialEM navigator allowing acquisition points to be associated with specific view-maps. ArbitrEM session files are output by default into ./arbitrEM.')
 parser.add_argument('--o', default='./arbitrEM', help='output directory for ArbitrEM files')
-parser.add_argument('--d', default=None, type=float, help='the diameter of the targeting-map in micrometers')
+parser.add_argument('--d', default=None, type=float, help='the diameter of the targeting view-map in micrometers')
 parser.add_argument('--nav', default=None, help='the SerialEM navigator file (not in XML format)')
 parser.add_argument('--v', default='False',help='Request verbose output for diagnositic purposes')
 parser.add_argument('--s', default='True',help='set to "True" to request verbose output for diagnositic purposes')
-parser.add_argument('--customShiftOffset', default='0.0 0.0',help='apply a custom beam-image shift offset')
-parser.add_argument('--defocusRange', default='-1 -2.6 0.2',help='the defocus range and step')
+parser.add_argument('--generateSettings', default='True',help='whether or not to generate the settings')
+parser.add_argument('--customShiftOffset', default='0.0 0.0',help='apply a custom beam-image shift offset to systematically adjust calculated targeting X,Y shifts.')
+parser.add_argument('--defocusRange', default='-1 -2.6 0.2',help='the defocus range and step, specify for example as \'-1 -2.5 0.2\'. Step must be positive.)
 parser.add_argument('--earlyReturn', default='1',help=' 0 - early return ON, 1 - early return OFF i.e. SerialEM parameter values')
+parser.add_argument('--scriptTemplate', default='./script_templates/ArbitrEM.txt', help='location of template script into which parameters will be imbeded')
+parser.add_argument('--sessionBasePath', default=None, help='session base path on the SerialEM computer. e.g.: D:\session\specimen_X\')
 
 args_dict = vars(parser.parse_args())
 
@@ -30,6 +34,7 @@ if None in args_dict.values():
         print('Please specify the diameter of your view-maps and try again. Run ./processNavigator.py --help for more details.')
     elif args_dict['nav'] is None:
         print('Please specify a navigator file and try again. The format should be SerialEM and not XML. Run ./processNavigator.py --help for more details.')  
+    elif args_dict['sessionBasePath']
     quit()
     
 try:
@@ -38,7 +43,6 @@ try:
 
 except Exception as e:
     print('Problem interpreting boolean variable. Please check you spelling.')
-
 
 settingsFiles = {'customShift.txt':args_dict['customShiftOffset'],
                  'defocusRange.txt':args_dict['defocusRange'],
@@ -73,6 +77,12 @@ def createSettingsFiles():
             outFile.close()
         except Exception as e:
             print(str(e))
+
+def readFileIntoStringTemplate(inputFile):
+    with open(inputFile,'r') as fileHandle: #slurm_skubmit_peta4-skylake_template
+        fileContents=''.join(fileHandle.readlines())
+        fileStringTemplate = Template(str(fileContents))
+        return fileStringTemplate
 
 def calculateDistance(anchor_item, point_item):
     distance_calc = 0
@@ -173,6 +183,7 @@ if numMapAcquire == 0:
     quit()
 
 pointsPerMap = round(numAcqPoints / numMapAcquire, 2)
+                    
 print("Processed navigigator file {}.\n{} hole/area maps are set to acquire, and {} points for high-magnification acquisition were processed.\nThere are {} points per map. Please check that this makes sense by referring to information listed in the SerialEM navigator panel.".format(
         args_dict['nav'], numMapAcquire, numAcqPoints, pointsPerMap))
 
