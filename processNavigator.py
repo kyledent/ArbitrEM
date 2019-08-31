@@ -13,9 +13,9 @@ from __future__ import division
 
 import math, re, sys, argparse, os, sys
 
-parser = argparse.ArgumentParser(description='ArbitrEM script to process a SerialEM navigator file to associate acquisition points with specific acquisition templates')
+parser = argparse.ArgumentParser(description='ArbitrEM Python script to process a SerialEM navigator allowing acquisition points to be associated with specific view-maps. ArbitrEM session files are output by default into ./arbitrEM')
 parser.add_argument('--o', default='./arbitrEM', help='output directory for ArbitrEM files')
-parser.add_argument('--d', default=None, type=float, help='the diameter of the targetting-map in micrometers')
+parser.add_argument('--d', default=None, type=float, help='the diameter of the targeting-map in micrometers')
 parser.add_argument('--nav', default=None, help='the SerialEM navigator file (not in XML format)')
 parser.add_argument('--v', default='False',help='Request verbose output for diagnositic purposes')
 parser.add_argument('--s', default='True',help='set to "True" to request verbose output for diagnositic purposes')
@@ -25,15 +25,20 @@ parser.add_argument('--earlyReturn', default='1',help=' 0 - early return ON, 1 -
 
 args_dict = vars(parser.parse_args())
 
+if None in args_dict.values():
+    if args_dict['d'] is None:
+        print('Please specify the diameter of your view-maps and try again. Run ./processNavigator.py --help for more details.')
+    elif args_dict['nav'] is None:
+        print('Please specify a navigator file and try again. The format should be SerialEM and not XML. Run ./processNavigator.py --help for more details.')  
+    quit()
+    
 try:
     args_dict['v'] = eval(args_dict['v'])
     args_dict['s'] = eval(args_dict['s'])
 
 except Exception as e:
     print('Problem interpreting boolean variable. Please check you spelling.')
-if None in args_dict.values():
-    print('Please check input parameters and try again.')
-    quit()
+
 
 settingsFiles = {'customShift.txt':args_dict['customShiftOffset'],
                  'defocusRange.txt':args_dict['defocusRange'],
