@@ -1,8 +1,8 @@
-ScriptName AbritrEM
+ScriptName runArbitrEM
 # PLEASE NOTE: ArbitrEM is currently under development and is currently in 'alpha'.
-# This script is typically called from the Navigator menu (Acquire at Points).
+# To run the collection, this script is typically called from the Navigator menu (Acquire at Points).
 # To test, it may be run by selecting a View-map marked for Acquire in the Navigator and simply clicking the 'Run' button from the Script panel.
-# Navigator items corresponding to View-maps are set to acquire (A). 
+# Navigator items corresponding to View-maps are set to acquire (A) 
 # Please map sure that square montages have been deleted from the Navigator
 # as well as any Navigator point groups for View-map acquisition
 # Please make sure you have updated the navigator indices guide using the processNavigator.py script.
@@ -12,13 +12,13 @@ ScriptName AbritrEM
 
 #******SETTINGS*******
 # General settings
-foilHoleDiameter = 3.5			# units um
-viewDefocus = -75				# unit um
-viewExposureTime = 0.2			# seconds
-imageShiftSettlingTime = 3 		# seconds
-stageShiftSettlingTime = 5 		# seconds
-focusDistance = 1.7 			# units um
-maxHoleStageShift = 100		    # units nm
+viewMapDiameter = $viewMapDiameter               # units um
+viewDefocus = $viewMapDefocus                   # unit um
+viewExposureTime = $viewMapExpTime                  # seconds
+imageShiftSettlingTime = 3                  # seconds
+stageShiftSettlingTime = 5                  # seconds
+#focusDistance = 1.7                    # units um - focus distance is not implemented yet, set this in the low-dose (LD) Panel
+maxHoleStageShift = 100                 # units nm
 
 #SerialEM settings
 SuppressReports
@@ -33,11 +33,11 @@ ReportClock
 
 #******READ SETTINGS FILES*******
 # Specify location of information files produce by processNavigator.py
-ReadTextFile pointIndices D:\NT21004-256\lacey-day1\arbitrEM\pointIndices.txt 
-ReadTextFile indexGuide D:\NT21004-256\lacey-day1\arbitrEM\indexGuide.txt 
-ReadTextFile shifts D:\NT21004-256\lacey-day1\arbitrEM\settings\customShifts.txt
-ReadTextFile defocus_range D:\NT21004-256\lacey-day1\arbitrEM\settings\defocusRange.txt
-ReadTextFile early_return D:\NT21004-256\lacey-day1\arbitrEM\settings\earlyReturn.txt
+ReadTextFile pointIndices $sessionBasePath\arbitrEM\pointIndices.txt 
+ReadTextFile indexGuide $sessionBasePath\arbitrEM\indexGuide.txt 
+ReadTextFile shifts $sessionBasePath\arbitrEM\settings\customShifts.txt
+ReadTextFile defocus_range $sessionBasePath\arbitrEM\settings\defocusRange.txt
+ReadTextFile early_return $sessionBasePath\arbitrEM\settings\earlyReturn.txt
 #******END OF SETTINGS******
 
 #*****PROCESS_SETTINGS********
