@@ -2,9 +2,8 @@ ScriptName runArbitrEM
 # PLEASE NOTE: ArbitrEM is currently under development and is currently in 'alpha'.
 # To run the collection, this script is typically called from the Navigator menu (Acquire at Points).
 # To test, it may be run by selecting a View-map marked for Acquire in the Navigator and simply clicking the 'Run' button from the Script panel.
-# Navigator items corresponding to View-maps are set to acquire (A) 
-# Please map sure that square montages have been deleted from the Navigator
-# as well as any Navigator point groups for View-map acquisition
+# Navigator items corresponding to View-maps are set to acquire (A) (NOT THE ACQUISITION POINTS THEMSELVES)
+# Please map sure that square montages have been deleted from the Navigator, as well as any Navigator point groups used for View-map acquisitions
 # Please make sure you have updated the navigator indices guide using the processNavigator.py script.
 # A general script for single-particle data collection in SerialEM with allowing a custom series of beam-image shifts to be 
 # implemented. Borrows functions from various scripts on the Nexperion website (https://www.nexperion.net/).

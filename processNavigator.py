@@ -9,6 +9,9 @@
 # TODO: plot position of acquisition points within each acquisition template.
 # TODO: output ArbitrEM script with path to settings files embedded along with other parameters
 # TODO: support XML navigator files
+# TODO: solve the problem where the last acquisition point is dropped.
+# TODO: implement a validation that ensures the script cannot start when it is not configured for the current navigator.
+
 
 from __future__ import division
 
